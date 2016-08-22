@@ -140,7 +140,7 @@ atoi:
     cmp cl, byte 0x2D
     ; If it's not continue to the loop
     jne .loop_block
-    ; Otherwise, set r10b to 1 for negatibe
+    ; Otherwise, set r10b to 1 for negative
     mov r10b, 1
     inc rsi
 
