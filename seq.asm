@@ -66,7 +66,7 @@ calc_seq:
     cmp r13, r14
     jg .return_block
 
-    ; Print out rax's value
+    ; Print out counter's value
     mov rax, r13
     call itoa
     call print
@@ -89,6 +89,13 @@ itoa:
     dec r9
     mov r11, 1 ; Store the size in r11 (starts at 1 because of the newline)
 
+    ; Determine if the number is negative, and if so, set r10b to 1
+    xor r10b, r10b
+    test rax, rax
+    jns .loop_block ; If it's not negative, jump to loop
+    mov r10b, 1 ; If it is, set r10b to 1
+    neg rax ; Make the number positive again for the ASCII conversion
+
 .loop_block:
     mov rdx, 0
     ; Divide number by 10 and use remainder to calculate ASCII char value
@@ -109,13 +116,33 @@ itoa:
     add dl, 0x30
     mov [r9], dl
     inc r11
+
+    ; Check the number's sign stored in r10b
+    cmp r10b, 1
+    je .handle_negative ; If the number is negative, add a '-'
+    ; Otherwise, return
+    ret
+.handle_negative:
+    dec r9
+    inc r11
+    mov [r9], byte 0x2D ; Add '-'
     ret
 
 ; Takes int string pointer in rsi, returns integer in rax
 atoi:
-    xor rax, rax ; Set al to 0
-    xor rcx, rcx ; Set cl to 0, we'll store the current digit here
+    xor rax, rax ; Set rax to 0
+    xor rcx, rcx ; Set rcx to 0, we'll store the current digit here
+    xor r10b, r10b ; Set r10b to 0, we'll store the number's sign here
     mov rbx, 10 ; Set rbx to 10
+
+    ; Check if the first char is a '-' indicating a negative number
+    mov cl, [rsi]
+    cmp cl, byte 0x2D
+    ; If it's not continue to the loop
+    jne .loop_block
+    ; Otherwise, set r10b to 1 for negatibe
+    mov r10b, 1
+    inc rsi
 
 .loop_block:
     ; Store our current char in cl
@@ -146,6 +173,14 @@ atoi:
     jmp .loop_block
 
 .return_block:
+    ; If r10b is 1, make the number negative
+    cmp r10b, 1
+    je .handle_negative
+    ; Otherwise, return
+    ret
+
+.handle_negative:
+    neg rax
     ret
 
 ; Prints the string at r9 with size of r11
